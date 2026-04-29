@@ -1,0 +1,34 @@
+# Dependency directories
+node_modules/
+
+# Build outputs
+bin/*.js
+bin/*.js.map
+bin/*.d.ts
+dist/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Environment and secrets
+.env
+.env.local
+.env.production
+
+# Credentials (Optional, but safe to keep out of Git)
+# Note: Real credentials are stored at ~/.insighta/credentials.json 
+# but this prevents accidental local check-ins
+credentials.json
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
