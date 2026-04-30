@@ -1,6 +1,6 @@
 import http from "http";
 import open from "open";
-import { generateCodeVerifier, generateCodeChallenge } from "./pkce.js";
+import chalk from "chalk";
 import { saveCredentials, getCredentials } from "./config.js";
 
 const BACKEND_URL = process.env.INSIGHTA_BACKEND_URL || "http://localhost:3110";
@@ -8,15 +8,12 @@ const CLI_PORT = 9876;
 const REDIRECT_URI = `http://localhost:${CLI_PORT}/callback`;
 
 export async function login(): Promise<void> {
-  const codeVerifier = generateCodeVerifier();
-  const codeChallenge = generateCodeChallenge(codeVerifier);
-
   // 1. Get the GitHub auth URL from the backend
   const urlResponse = await fetch(
     `${BACKEND_URL}/api/v1/auth/github/url?redirect_uri=${encodeURIComponent(REDIRECT_URI)}`
   );
   const { data } = await urlResponse.json() as any;
-  const authUrl = `${data.url}&code_challenge=${codeChallenge}&code_challenge_method=S256`;
+  const authUrl = data.url;
 
   // 2. Start temporary callback server
   return new Promise((resolve, reject) => {
@@ -25,6 +22,7 @@ export async function login(): Promise<void> {
       
       if (url.pathname === "/callback") {
         const code = url.searchParams.get("code");
+        const state = url.searchParams.get("state");
         
         if (!code) {
           res.writeHead(400);
@@ -35,13 +33,13 @@ export async function login(): Promise<void> {
         }
 
         try {
-          // 3. Exchange code + code_verifier with backend
+          // 3. Exchange code + state with backend
           const tokenResponse = await fetch(`${BACKEND_URL}/api/v1/auth/github/callback`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               code,
-              code_verifier: codeVerifier,
+              state,
               redirect_uri: REDIRECT_URI,
             }),
           });
@@ -81,7 +79,8 @@ export async function login(): Promise<void> {
     });
 
     server.listen(CLI_PORT, () => {
-      console.log(`Opening browser for GitHub login...`);
+      console.log(`\nOpening browser for GitHub login...`);
+      console.log(chalk.dim(`If the browser doesn't open, click this link:\n${authUrl}\n`));
       open(authUrl);
     });
 
